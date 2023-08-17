@@ -37,7 +37,7 @@ While chatting with my reverse engineering instructor, he mentioned coming acros
 
 ## How to obfuscate the CFG
 
-Already speaking with my instructor, he explained me that an obfuscation technique really time consuming for the analyst is when you break the simplicity of the control flow graph (CFG). So we will try to break it by putting all the edges in one main dispatcher. to do, we will follow the following steps :
+Already speaking with my instructor, he explained me that an obfuscation technique really time consuming for the analyst is when you break the simplicity of the control flow graph (CFG). A control flow graph represents the flow of a program's execution through nodes (basic blocks) connected by edges, depicting the order of operations and decision paths. So we will try to break it by putting all the edges in one main dispatcher. to do, we will follow the following steps :
 
 - Elevate local variables to the status of global variables.
 - Upgrade function arguments to the level of global variables.

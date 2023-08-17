@@ -24,7 +24,7 @@ Before delving into the intricate realm of LLVM, I wish to express my gratitude 
     - [Redirect function calls](#redirect-function-calls)
     - [Last step : create a new `main`](#last-step--create-a-new-main)
     - [Little note](#little-note)
-    - [Conclusion](#conclusion)
+  - [Conclusion](#conclusion)
 
 ## Abbreviations
 
@@ -280,6 +280,6 @@ int main(int argc, char **argv) {
 
 It could have been feasible to also reroute function calls to the `dispatcher`, but the intention here is to employ two branching techniques that would induce a bit more frustration for the analyst 😁.
 
-### Conclusion
+## Conclusion
 
 You can find the code for this obfuscation step available [here](https://github.com/aiglematth/simple_obfuscator). I trust you found this brief expedition into my basic obfuscation pass enjoyable! The code is structured in a manner that makes it easy to incorporate additional obfuscation techniques – so don't hesitate to explore further !

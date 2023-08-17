@@ -281,8 +281,8 @@ It could have been feasible to also reroute function calls to the `dispatcher`, 
 Here, we could read the LLVM Intermediate Representation of the not obfuscated code first ; readable ; and the obfuscated one after.
 
 ```llvm
-; ModuleID = '/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c'
-source_filename = "/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c"
+; ModuleID = 'simple_obfuscator/tests/article_test/src/main.c'
+source_filename = "simple_obfuscator/tests/article_test/src/main.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 
@@ -354,8 +354,8 @@ attributes #3 = { nounwind willreturn memory(read) }
 ```
 
 ```llvm
-; ModuleID = '/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/build/main.ll'
-source_filename = "/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c"
+; ModuleID = 'simple_obfuscator/tests/article_test/build/main.ll'
+source_filename = "simple_obfuscator/tests/article_test/src/main.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
 target triple = "x86_64-unknown-linux-gnu"
 

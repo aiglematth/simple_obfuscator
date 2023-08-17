@@ -1,4 +1,4 @@
-# LLVM obfuscation pass or how to have beatiful codebase but messy binaries
+# LLVM obfuscation pass or how to have beautiful codebase but messy binaries
 
 ## Abstract
 

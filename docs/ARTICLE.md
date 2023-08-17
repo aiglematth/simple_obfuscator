@@ -280,7 +280,7 @@ It could have been feasible to also reroute function calls to the `dispatcher`, 
 
 Here, we could read the LLVM Intermediate Representation of the not obfuscated code first ; readable ; and the obfuscated one after.
 
-```llvm-ir
+```llvm
 ; ModuleID = '/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c'
 source_filename = "/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
@@ -353,7 +353,7 @@ attributes #3 = { nounwind willreturn memory(read) }
 !5 = !{!"clang version 16.0.4 (https://github.com/llvm/llvm-project ae42196bc493ffe877a7e3dff8be32035dea4d07)"}
 ```
 
-```llvm-ir
+```llvm
 ; ModuleID = '/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/build/main.ll'
 source_filename = "/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c"
 target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"

@@ -15,7 +15,7 @@ Before delving into the intricate realm of LLVM, I wish to express my gratitude 
   - [Contents](#contents)
   - [Abbreviations](#abbreviations)
   - [Introduction](#introduction)
-  - [What obfuscation techniques I choosed](#what-obfuscation-techniques-i-choosed)
+  - [How to obfuscate the CFG](#how-to-obfuscate-the-cfg)
     - [Elevate local variables](#elevate-local-variables)
     - [Upgrade function arguments](#upgrade-function-arguments)
     - [Raise function return](#raise-function-return)
@@ -35,7 +35,7 @@ Before delving into the intricate realm of LLVM, I wish to express my gratitude 
 
 While chatting with my reverse engineering instructor, he mentioned coming across a malware codebase that was exceptionally well-crafted. Curious, I inquired about the point in the process when the source code transitions into convoluted, obfuscated code. He suggested that this transformation likely occurs during compilation, possibly due to the involvement of compiler plugins. Inspired by our conversation, I'm now eager to conduct a proof of concept to gain a deeper understanding of this phenomenon.
 
-## What obfuscation techniques I choosed
+## How to obfuscate the CFG
 
 Already speaking with my instructor, he explained me that an obfuscation technique really time consuming for the analyst is when you break the simplicity of the control flow graph (CFG). So we will try to break it by putting all the edges in one main dispatcher. to do, we will follow the following steps :
 

@@ -14,7 +14,6 @@ Before delving into the intricate realm of LLVM, I wish to express my gratitude 
   - [Thanks](#thanks)
   - [Contents](#contents)
   - [Abbreviations](#abbreviations)
-  - [Definitions](#definitions)
   - [Introduction](#introduction)
   - [What obfuscation techniques I choosed](#what-obfuscation-techniques-i-choosed)
     - [Elevate local variables](#elevate-local-variables)
@@ -30,10 +29,6 @@ Before delving into the intricate realm of LLVM, I wish to express my gratitude 
 
 - ABI : Application Binary Interface
 - CFG : Control Flow Graph
-
-## Definitions
-
-- <a name="Lifter"></a>Lifter : Software able to convert a binary to an intermediate representation.
 
 ## Introduction
 

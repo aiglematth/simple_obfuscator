@@ -23,6 +23,7 @@ Before delving into the intricate realm of LLVM, I wish to express my gratitude 
     - [Redirect function calls](#redirect-function-calls)
     - [Last step : create a new `main`](#last-step--create-a-new-main)
     - [Little note](#little-note)
+    - [Gorry comparison](#gorry-comparison)
   - [Conclusion](#conclusion)
 
 ## Abbreviations
@@ -274,6 +275,280 @@ int main(int argc, char **argv) {
 ### Little note
 
 It could have been feasible to also reroute function calls to the `dispatcher`, but the intention here is to employ two branching techniques that would induce a bit more frustration for the analyst 😁.
+
+### Gorry comparison
+
+Here, we could read the LLVM Intermediate Representation of the not obfuscated code first ; readable ; and the obfuscated one after.
+
+```llvm-ir
+; ModuleID = '/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c'
+source_filename = "/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+@.str = private unnamed_addr constant [7 x i8] c"Little\00", align 1
+@.str.1 = private unnamed_addr constant [7 x i8] c"Medium\00", align 1
+@.str.2 = private unnamed_addr constant [7 x i8] c"Unknow\00", align 1
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @dumb(ptr noundef %0) #0 {
+  %2 = alloca ptr, align 8
+  store ptr %0, ptr %2, align 8
+  %3 = load ptr, ptr %2, align 8
+  %4 = call i64 @strlen(ptr noundef %3) #3
+  switch i64 %4, label %9 [
+    i64 5, label %5
+    i64 10, label %7
+  ]
+
+5:                                                ; preds = %1
+  %6 = call i32 @puts(ptr noundef @.str)
+  br label %11
+
+7:                                                ; preds = %1
+  %8 = call i32 @puts(ptr noundef @.str.1)
+  br label %11
+
+9:                                                ; preds = %1
+  %10 = call i32 @puts(ptr noundef @.str.2)
+  br label %11
+
+11:                                               ; preds = %9, %7, %5
+  ret i32 0
+}
+
+; Function Attrs: nounwind willreturn memory(read)
+declare i64 @strlen(ptr noundef) #1
+
+declare i32 @puts(ptr noundef) #2
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @main(i32 noundef %0, ptr noundef %1) #0 {
+  %3 = alloca i32, align 4
+  %4 = alloca i32, align 4
+  %5 = alloca ptr, align 8
+  store i32 0, ptr %3, align 4
+  store i32 %0, ptr %4, align 4
+  store ptr %1, ptr %5, align 8
+  %6 = load ptr, ptr %5, align 8
+  %7 = getelementptr inbounds ptr, ptr %6, i64 0
+  %8 = load ptr, ptr %7, align 8
+  %9 = call i32 @dumb(ptr noundef %8)
+  ret i32 %9
+}
+
+attributes #0 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { nounwind willreturn memory(read) "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #2 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #3 = { nounwind willreturn memory(read) }
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4}
+!llvm.ident = !{!5}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 8, !"PIC Level", i32 2}
+!2 = !{i32 7, !"PIE Level", i32 2}
+!3 = !{i32 7, !"uwtable", i32 2}
+!4 = !{i32 7, !"frame-pointer", i32 2}
+!5 = !{!"clang version 16.0.4 (https://github.com/llvm/llvm-project ae42196bc493ffe877a7e3dff8be32035dea4d07)"}
+```
+
+```llvm-ir
+; ModuleID = '/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/build/main.ll'
+source_filename = "/mnt/c/Users/Matthieu/Documents/GitHub/simple_obfuscator/tests/article_test/src/main.c"
+target datalayout = "e-m:e-p270:32:32-p271:32:32-p272:64:64-i64:64-f80:128-n8:16:32:64-S128"
+target triple = "x86_64-unknown-linux-gnu"
+
+@.str = private unnamed_addr constant [7 x i8] c"Little\00", align 1
+@.str.1 = private unnamed_addr constant [7 x i8] c"Medium\00", align 1
+@.str.2 = private unnamed_addr constant [7 x i8] c"Unknow\00", align 1
+@dumb_local = internal global ptr null
+@dumb_arg = internal global ptr null
+@dumb_ret = internal global i32 0
+@_local = internal global i32 0
+@_local.1 = internal global i32 0
+@_local.2 = internal global ptr null
+@_arg = internal global i32 0
+@_arg.3 = internal global ptr null
+@_ret = internal global i32 0
+
+; Function Attrs: nounwind willreturn memory(read)
+declare i64 @strlen(ptr noundef) #0
+
+declare i32 @puts(ptr noundef) #1
+
+; Function Attrs: noinline nounwind optnone uwtable
+define dso_local i32 @main(i32 noundef %0, ptr noundef %1) #2 {
+  store i32 %0, ptr @_arg, align 4
+  store ptr %1, ptr @_arg.3, align 8
+  call void @1()
+  %3 = load i32, ptr @_ret, align 4
+  ret i32 %3
+}
+
+define internal void @0(i64 %0, i64 %1) {
+  %3 = add i64 %0, %1
+  switch i64 %3, label %4 [
+    i64 0, label %5
+    i64 1, label %6
+    i64 2, label %7
+    i64 3, label %8
+    i64 4, label %9
+    i64 5, label %10
+    i64 6, label %11
+    i64 7, label %12
+    i64 8, label %13
+    i64 9, label %14
+    i64 10, label %15
+    i64 11, label %16
+    i64 12, label %17
+    i64 13, label %18
+    i64 14, label %19
+    i64 15, label %20
+    i64 16, label %21
+    i64 17, label %22
+  ]
+
+4:                                                ; preds = %2
+  ret void
+
+5:                                                ; preds = %2
+  call void @dumb.7()
+  ret void
+
+6:                                                ; preds = %2
+  call void @dumb.7()
+  ret void
+
+7:                                                ; preds = %2
+  call void @dumb.7()
+  ret void
+
+8:                                                ; preds = %2
+  call void @dumb.7()
+  ret void
+
+9:                                                ; preds = %2
+  call void @dumb.7()
+  ret void
+
+10:                                               ; preds = %2
+  call void @dumb.5()
+  ret void
+
+11:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+12:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+13:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+14:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+15:                                               ; preds = %2
+  call void @dumb.6()
+  ret void
+
+16:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+17:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+18:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+19:                                               ; preds = %2
+  call void @dumb.7()
+  ret void
+
+20:                                               ; preds = %2
+  call void @dumb.8()
+  ret void
+
+21:                                               ; preds = %2
+  call void @dumb.8()
+  ret void
+
+22:                                               ; preds = %2
+  call void @dumb.8()
+  ret void
+}
+
+define internal void @dumb.4() {
+  %1 = load ptr, ptr @dumb_arg, align 8
+  store ptr %1, ptr @dumb_local, align 8
+  %2 = load ptr, ptr @dumb_local, align 8
+  %3 = call i64 @strlen(ptr noundef %2) #3
+  %4 = and i64 %3, 15
+  call void @0(i64 0, i64 %4)
+  ret void
+}
+
+define internal void @dumb.5() {
+  %1 = call i32 @puts(ptr noundef @.str)
+  call void @0(i64 15, i64 0)
+  ret void
+}
+
+define internal void @dumb.6() {
+  %1 = call i32 @puts(ptr noundef @.str.1)
+  call void @0(i64 16, i64 0)
+  ret void
+}
+
+define internal void @dumb.7() {
+  %1 = call i32 @puts(ptr noundef @.str.2)
+  call void @0(i64 17, i64 0)
+  ret void
+}
+
+define internal void @dumb.8() {
+  store i32 0, ptr @dumb_ret, align 4
+  ret void
+}
+
+define internal void @1() {
+  store i32 0, ptr @_local, align 4
+  %1 = load i32, ptr @_arg, align 4
+  store i32 %1, ptr @_local.1, align 4
+  %2 = load ptr, ptr @_arg.3, align 8
+  store ptr %2, ptr @_local.2, align 8
+  %3 = load ptr, ptr @_local.2, align 8
+  %4 = getelementptr inbounds ptr, ptr %3, i64 0
+  %5 = load ptr, ptr %4, align 8
+  store ptr %5, ptr @dumb_arg, align 8
+  call void @dumb.4()
+  %6 = load i32, ptr @dumb_ret, align 4
+  store i32 %6, ptr @_ret, align 4
+  ret void
+}
+
+attributes #0 = { nounwind willreturn memory(read) "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #1 = { "frame-pointer"="all" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #2 = { noinline nounwind optnone uwtable "frame-pointer"="all" "min-legal-vector-width"="0" "no-trapping-math"="true" "stack-protector-buffer-size"="8" "target-cpu"="x86-64" "target-features"="+cx8,+fxsr,+mmx,+sse,+sse2,+x87" "tune-cpu"="generic" }
+attributes #3 = { nounwind willreturn memory(read) }
+
+!llvm.module.flags = !{!0, !1, !2, !3, !4}
+!llvm.ident = !{!5}
+
+!0 = !{i32 1, !"wchar_size", i32 4}
+!1 = !{i32 8, !"PIC Level", i32 2}
+!2 = !{i32 7, !"PIE Level", i32 2}
+!3 = !{i32 7, !"uwtable", i32 2}
+!4 = !{i32 7, !"frame-pointer", i32 2}
+!5 = !{!"clang version 16.0.4 (https://github.com/llvm/llvm-project ae42196bc493ffe877a7e3dff8be32035dea4d07)"}
+```
 
 ## Conclusion
 

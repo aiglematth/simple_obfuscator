@@ -37,7 +37,7 @@ While chatting with my reverse engineering instructor, he mentioned coming acros
 
 ## What obfuscation techniques I choosed
 
-Already speaking with my instructor, he explained me that an obfuscation techniaue really time consuming for the analyst is when you break the simplicity of the control flow graph (CFG). So we will try to break it by putting all the edges in one main dispatcher. to do, we will follow the following steps :
+Already speaking with my instructor, he explained me that an obfuscation technique really time consuming for the analyst is when you break the simplicity of the control flow graph (CFG). So we will try to break it by putting all the edges in one main dispatcher. to do, we will follow the following steps :
 
 - Elevate local variables to the status of global variables.
 - Upgrade function arguments to the level of global variables.

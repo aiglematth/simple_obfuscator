@@ -17,6 +17,7 @@ size_t get_bitsize(uint64_t I) {
 
     while(I != 0) {
         I >>= 1;
+        Size++;
     }
 
     return Size;
@@ -338,17 +339,37 @@ void CallControlFlowModule::explode(Function &F) {
             case Instruction::Switch: {
                 SwitchInst *SW = dyn_cast<SwitchInst>(I);
 
-                vector<Function *> Successors;
+                map<uint64_t, Function *> SuccessorsMap;
+                size_t MaxCase = 0;
                 for(size_t I = 0; I < SW->getNumSuccessors(); I++) {
-                    Successors.push_back(BBToFn[SW->getSuccessor(I)]);
+                    if(SW->getSuccessor(I) != SW->getDefaultDest()) {
+                        uint64_t Offset = SW->findCaseDest(SW->getSuccessor(I))->getZExtValue();
+                        SuccessorsMap[Offset] = BBToFn[SW->getSuccessor(I)];
+                        if(Offset > MaxCase) { 
+                            MaxCase = Offset; 
+                        }
+                    }
                 }
-                Successors.push_back(BBToFn[SW->getDefaultDest()]);
+                Function *Default = BBToFn[SW->getDefaultDest()];
+                vector<Function *> Successors;
+                size_t Prev = 0;
+                for(auto Pair : SuccessorsMap) {
+                    for(size_t Hole = Prev; Hole < Pair.first; Hole++) {
+                        Successors.push_back(Default);
+                    }
+                    Prev = Pair.first + 1;
+                    Successors.push_back(Pair.second);
+                }
+                MaxCase = (1 << get_bitsize(MaxCase + 1)) - 1;
+                for(size_t Hole = Prev; Hole < MaxCase; Hole++) {
+                    Successors.push_back(Default);
+                }
                 size_t Base = this->add_dispatch(Successors);
                 Value *Max  = ConstantInt::get(
                     this->M->getContext(), 
                     APInt(
                         64, 
-                        (1 << get_bitsize(SW->getNumSuccessors() + 1)) - 1
+                        MaxCase
                     )
                 );
                 Value *Offset = BinaryOperator::CreateAnd(SW->getCondition(), Max, "", I);

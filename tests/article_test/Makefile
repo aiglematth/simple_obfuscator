@@ -12,8 +12,8 @@ LL_OBFUSCATED := $(BUILD_DIR)/obfuscated.ll
 OBFUSCATED := $(BUILD_DIR)/obfuscated.elf
 NOT_OBFUSCATED := $(BUILD_DIR)/not_obfuscated.elf
 
-CC := clang
-OPT := opt
+CC := /opt/llvm-16.0.4/bin/clang
+OPT := /opt/llvm-16.0.4/bin/opt
 STRIP := strip
 
 all: build-not-obfuscated build

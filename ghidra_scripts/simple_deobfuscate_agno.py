@@ -55,8 +55,9 @@ class Dispatcher():
         for jmp_addr in self.high_func.getJumpTables()[0].getCases()[:-1]:
             for pcode_op in self.high_func.getPcodeOps(jmp_addr):
                 if pcode_op.getOpcode() == ghidra.program.model.pcode.PcodeOp.CALL:
+                    self.jumps.append(getFunctionContaining(pcode_op.getInput(0).getAddress()))
+                    self.jumps[-1].setInline(True)
                     break;
-            self.jumps.append(getFunctionContaining(pcode_op.getInput(0).getAddress()))
 
     def get(self, offset):
         return self.jumps[offset]
@@ -174,8 +175,13 @@ class RecoveredFunction():
                 to_call    = self._dispatcher.get(dispatcher_index).getEntryPoint()
                 next_label = "<next_" + str(index) + ">"
                 code += [
-                    "if(RSI == " + str(index) + ") goto " + next_label + ";",
+                    "if(RSI != " + str(index) + ") goto " + next_label + ";",
+                    # "RIP = 0x" + to_call.toString() + ";",
+                    # "goto [RIP];",
                     "call 0x" + to_call.toString() + ";",
+                    # "RIP = *RSP;",
+                    # "RSP = RSP + 8;"
+                    # "return [RIP];",
                     next_label
                 ]
             code += [
@@ -183,9 +189,7 @@ class RecoveredFunction():
                 "  </pcode>", 
                 "</callfixup>"
             ]
-            print(callfixup_name + ":")
             print("\n".join(code))
-            print()
             SPEC_EXT.addReplaceCompilerSpecExtension("\n".join(code), getMonitor())
 
             patched_func_name = "PATCH_" + func.getName()
@@ -207,17 +211,14 @@ class RecoveredFunction():
                 self._dispatcher._get_dispatcher_call(func).getPcodeOp().getSeqnum().getTarget()
             )
             # print(call_instr.getAddress())
-            ghidra.app.cmd.refs.EditRefTypeCmd(
-                ghidra.program.model.symbol.MemReferenceImpl(
-                    call_instr.getAddress(),
-                    created_func.getEntryPoint(),
-                    ghidra.program.model.symbol.FlowType.UNCONDITIONAL_CALL,
-                    ghidra.program.model.symbol.SourceType.ANALYSIS,
-                    1,
-                    True
-                ),
-                ghidra.program.model.symbol.FlowType.UNCONDITIONAL_CALL
-            ).applyTo(currentProgram)
+            ref = currentProgram.getReferenceManager().addMemoryReference(
+                call_instr.getAddress(),
+                created_func.getEntryPoint(),
+                ghidra.program.model.symbol.FlowType.UNCONDITIONAL_CALL,
+                ghidra.program.model.symbol.SourceType.ANALYSIS,
+                ghidra.program.model.symbol.Reference.MNEMONIC
+            )
+            currentProgram.getReferenceManager().setPrimary(ref, True)
 
 dispatcher = Dispatcher(getFunctionContaining(toAddr(0x101190)))
 

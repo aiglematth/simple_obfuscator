@@ -1,5 +1,3 @@
-SPEC_EXT = ghidra.program.database.SpecExtension(currentProgram)
-
 DECOMP = ghidra.app.decompiler.DecompInterface()
 DECOMP.openProgram(currentProgram)
 
@@ -25,25 +23,40 @@ def getPcode(func):
     for opcodeast in high.getPcodeOps():
         yield opcodeast
 
-def getAddressSpace(name):
-    space = currentProgram.getAddressFactory().getAddressSpace(name)
-    if space == None:
-        ghidra.app.cmd.memory.AddUninitializedMemoryBlockCmd(
-            name, 
-            None, 
-            currentProgram.getName(),
-            currentProgram.getAddressFactory()
-                            # .getAddressSpace("ram")
-                            .getAddressSpace("OTHER")
-                            .getAddress(0),
-            0x1,
-            True,
-            True,
-            True,
-            False,
-            True
-        ).applyTo(currentProgram)
-    return currentProgram.getAddressFactory().getAddressSpace(name)
+class Ram():
+
+    def __init__(self, size=0x10000):
+        self.current_address = toAddr(0)
+        try:
+            ghidra.app.cmd.memory.AddInitializedMemoryBlockCmd(
+                "PATCH_OBFUSCATION_SNIPPETS", 
+                None, 
+                currentProgram.getName(),
+                currentProgram.getAddressFactory()
+                                .getAddressSpace("ram")
+                                # .getAddressSpace("OTHER")
+                                .getAddress(self.current_address.getOffset()),
+                size,
+                True,
+                True,
+                True,
+                False,
+                0x0,
+                False
+            ).applyTo(currentProgram)
+        except:
+            instr = getInstructionAt(self.current_address)
+            while instr != None:
+                self.current_address = self.current_address.add(len(instr.getBytes()))
+                instr = getInstructionAt(self.current_address)
+
+
+
+    def getAvailableRam(self):
+        return self.current_address
+
+    def consumeRam(self, size):
+        self.current_address = self.current_address.add(size)
 
 class Dispatcher():
       
@@ -55,8 +68,8 @@ class Dispatcher():
         for jmp_addr in self.high_func.getJumpTables()[0].getCases()[:-1]:
             for pcode_op in self.high_func.getPcodeOps(jmp_addr):
                 if pcode_op.getOpcode() == ghidra.program.model.pcode.PcodeOp.CALL:
+                    self.jumps.append(getFunctionContaining(pcode_op.getInput(0).getAddress()))
                     break;
-            self.jumps.append(getFunctionContaining(pcode_op.getInput(0).getAddress()))
 
     def get(self, offset):
         return self.jumps[offset]
@@ -122,9 +135,10 @@ class Dispatcher():
 
 class RecoveredFunction():
      
-    def __init__(self, entrypoint, dispatcher):
+    def __init__(self, entrypoint, dispatcher, ram):
         self._dispatcher = dispatcher
         self._entrypoint = entrypoint
+        self._ram        = ram
 
         traversed = []
         to_traverse = [entrypoint]
@@ -164,66 +178,46 @@ class RecoveredFunction():
         offset = self._dispatcher.get_offset(params[1])
 
         if base != None and offset != None:
-            callfixup_name = func.getName()
-            code = [
-                "<callfixup name=\"" + callfixup_name + "\">", 
-                "  <pcode>", 
-                "    <body><![CDATA["
-            ]
-            for index, dispatcher_index in enumerate([base + o for o in offset]):
-                to_call    = self._dispatcher.get(dispatcher_index).getEntryPoint()
-                next_label = "<next_" + str(index) + ">"
-                code += [
-                    "if(RSI == " + str(index) + ") goto " + next_label + ";",
-                    # "RIP = 0x" + to_call.toString() + ";",
-                    # "goto [RIP];",
-                    "call 0x" + to_call.toString() + ";",
-                    # "RIP = *RSP;",
-                    # "RSP = RSP + 8;"
-                    # "return [RIP];",
-                    next_label
-                ]
-            code += [
-                "    ]]></body>", 
-                "  </pcode>", 
-                "</callfixup>"
-            ]
-            print(callfixup_name + ":")
-            print("\n".join(code))
-            print()
-            SPEC_EXT.addReplaceCompilerSpecExtension("\n".join(code), getMonitor())
-
-            patched_func_name = "PATCH_" + func.getName()
-            patch_space = getAddressSpace(patched_func_name)
-            created_func = getFunctionContaining(patch_space.getAddress(0))
-            if created_func == None:
-                create_func = ghidra.app.cmd.function.CreateFunctionCmd(
-                    patched_func_name,
-                    patch_space.getAddress(0),
-                    None,
-                    ghidra.program.model.symbol.SourceType.ANALYSIS,
-                    False,
-                    True
-                )
-                create_func.applyTo(currentProgram, getMonitor())
-                created_func = create_func.getFunction()
-            created_func.setCallFixup(callfixup_name)
             call_instr = getInstructionContaining(
                 self._dispatcher._get_dispatcher_call(func).getPcodeOp().getSeqnum().getTarget()
-            )
-            # print(call_instr.getAddress())
-            ghidra.app.cmd.refs.EditRefTypeCmd(
-                ghidra.program.model.symbol.MemReferenceImpl(
-                    call_instr.getAddress(),
-                    created_func.getEntryPoint(),
-                    ghidra.program.model.symbol.FlowType.UNCONDITIONAL_CALL,
-                    ghidra.program.model.symbol.SourceType.ANALYSIS,
-                    1,
-                    True
-                ),
-                ghidra.program.model.symbol.FlowType.UNCONDITIONAL_CALL
-            ).applyTo(currentProgram)
+            ).getPrevious()
 
+            assembler = ghidra.app.plugin.assembler.Assemblers.getAssembler(currentProgram)
+
+            code = []
+            if len(offset) == 1:
+                to_call = self._dispatcher.get(base).getEntryPoint()
+                code += ["JMP 0x" + to_call.toString()]
+            elif len(offset) == 2:
+                while call_instr.getMnemonicString() != "CMP":
+                    call_instr = call_instr.getPrevious()
+
+                jmptype = call_instr.getNext().getMnemonicString().replace("SET", "J")
+                code += [
+                    jmptype + " 0x" + self._dispatcher.get(base).getEntryPoint().toString(),
+                    "JMP 0x" + self._dispatcher.get(base+1).getEntryPoint().toString()
+                ]
+            else:
+                offset = [base + o for o in offset]
+                for index, dispatcher_index in enumerate(offset[:-1]):
+                    to_call    = self._dispatcher.get(dispatcher_index).getEntryPoint()
+                    code += [
+                        "CMP RSI, " + str(index),
+                        "JZ 0x" + to_call.toString(),
+                    ]
+                to_call = self._dispatcher.get(offset[-1]).getEntryPoint()
+                code += ["JMP 0x" + to_call.toString()]
+
+            patch_address = self._ram.getAvailableRam()
+            instrs = list(assembler.assemble(patch_address, *code))
+            self._ram.consumeRam(sum([len(instr.getBytes()) for instr in instrs]))
+            
+            call_instr.setFallThrough(patch_address)
+            # assembler.assemble(call_instr.getAddress(), "JMP 0x" + patch_address.toString())
+
+            
+
+ram = Ram()
 dispatcher = Dispatcher(getFunctionContaining(toAddr(0x101190)))
 
-r = RecoveredFunction(getFunctionContaining(currentAddress), dispatcher)
+r = RecoveredFunction(getFunctionContaining(currentAddress), dispatcher, ram)
